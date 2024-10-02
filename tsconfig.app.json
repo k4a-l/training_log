@@ -20,5 +20,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "type.ts"]
+  "include": ["src", "type.ts", "google.script.d.ts"]
 }

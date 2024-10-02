@@ -2,6 +2,9 @@ import { Dispatch, useCallback, useEffect, useState } from "react";
 import {
 	Button,
 	Center,
+	FormControl,
+	FormLabel,
+	HStack,
 	IconButton,
 	Input,
 	NumberDecrementStepper,
@@ -10,6 +13,8 @@ import {
 	NumberInputField,
 	NumberInputStepper,
 	Select,
+	Spinner,
+	Stack,
 	Table,
 	Tbody,
 	Td,
@@ -21,8 +26,7 @@ import {
 import { TrainingDataByEvent, TraingSetType } from "../type";
 
 const getMasterData = async (): Promise<string[]> => {
-    console.log(google)
-	if (google && google.script && google.script.run) {
+	if (typeof google !== "undefined" && google.script && google.script.run) {
 		return await new Promise((resolve, reject) => {
 			google.script.run
 				.withSuccessHandler((items: string[]) => {
@@ -40,17 +44,21 @@ const getMasterData = async (): Promise<string[]> => {
 
 const submitForm = async (
 	data: TrainingDataByEvent
-): Promise<"success" | "error"> => {
-	if (google && google.script && google.script.run) {
-		return await new Promise((resolve, reject) => {
+): Promise<"success" | string> => {
+	if (typeof google !== "undefined" && google.script && google.script.run) {
+		return new Promise((resolve) => {
 			google.script.run
-				.withSuccessHandler((response: string) => {
-					if (response === "success") {
+				.withSuccessHandler((r: string) => {
+					console.log("success", r);
+					if (r === "success") {
 						resolve("success");
-						// document.getElementById("myForm")?.reset(); // フォームをクリア
 					} else {
-						reject("error");
+						resolve(r);
 					}
+				})
+				.withFailureHandler((e) => {
+					console.log("error", e);
+					resolve(String(e));
 				})
 				.addData(data);
 		});
@@ -60,10 +68,10 @@ const submitForm = async (
 };
 
 function App() {
-	const [TraingEvents, setTrainingEvents] = useState<string[]>([]);
-	const [TraingData, setTrainingData] = useState<TrainingDataByEvent>({
+	const [traingEvents, setTrainingEvents] = useState<string[]>([]);
+	const [traingData, setTrainingData] = useState<TrainingDataByEvent>({
 		date: new Date().getDate().toString(),
-		sets: [],
+		sets: [{ rep: 10, weight: 0 }],
 	});
 
 	useEffect(() => {
@@ -74,28 +82,28 @@ function App() {
 
 	const addTrainingSet = useCallback(() => {
 		setTrainingData({
-			...TraingData,
+			...traingData,
 			sets: [
-				...TraingData.sets,
+				...traingData.sets,
 				{
-					rep: 0,
-					set: 1,
+					rep: 10,
 					weight: 0,
 				},
 			],
 		});
-	}, [TraingData]);
+	}, [traingData]);
 
 	const toast = useToast();
 
+	if (traingEvents.length === 0) {
+		return <Spinner />;
+	}
+
 	return (
 		<Center w="100dvw" h="100dvh">
-			<div
-			// style={{ background: "#333", borderRadius: "1em", padding: "1em" }}
-			>
+			<Stack>
 				<div
 					style={{
-						// background: "red",
 						display: "flex",
 						flexDirection: "row",
 						justifyContent: "space-between",
@@ -105,21 +113,21 @@ function App() {
 						type="date"
 						onChange={(v) => {
 							setTrainingData({
-								...TraingData,
+								...traingData,
 								date: v.target.value,
 							});
 						}}
 					/>
 					<Select
-						value={TraingData.event}
+						value={traingData.event}
 						onChange={(v) => {
 							setTrainingData({
-								...TraingData,
+								...traingData,
 								event: v.target.value,
 							});
 						}}
 					>
-						{TraingEvents.map((t) => (
+						{traingEvents.map((t) => (
 							<option key={t}>{t}</option>
 						))}
 					</Select>
@@ -130,19 +138,20 @@ function App() {
 							<Tr>
 								<Th>重量</Th>
 								<Th>回数</Th>
+								<Th>メモ</Th>
 								<Th></Th>
 							</Tr>
 						</Thead>
 						<Tbody>
-							{TraingData.sets.map((set, i) => {
+							{traingData.sets.map((set, i) => {
 								return (
 									<TrainingSet
 										key={i}
 										data={set}
 										seTdata={(data) => {
 											setTrainingData({
-												...TraingData,
-												sets: TraingData.sets.map(
+												...traingData,
+												sets: traingData.sets.map(
 													(_s, _i) => {
 														if (_i !== i) return _s;
 														return data;
@@ -152,8 +161,8 @@ function App() {
 										}}
 										onClickDelete={() => {
 											setTrainingData({
-												...TraingData,
-												sets: TraingData.sets.filter(
+												...traingData,
+												sets: traingData.sets.filter(
 													(_s, _i) => _i !== i
 												),
 											});
@@ -161,9 +170,20 @@ function App() {
 									/>
 								);
 							})}
-							<Tr>
-								<Td></Td>
-								<Td></Td>
+							<Tr
+								sx={{
+									"> td": { px: 1, py: 2 },
+								}}
+							>
+								<Td>
+									<Input visibility={"hidden"} />
+								</Td>
+								<Td>
+									<Input visibility={"hidden"} />
+								</Td>
+								<Td>
+									<Input visibility={"hidden"} />
+								</Td>
 								<Td p={1}>
 									<Button size="sm" onClick={addTrainingSet}>
 										+
@@ -173,20 +193,42 @@ function App() {
 						</Tbody>
 					</Table>
 				</div>
-				<Button
-					onClick={async () => {
-						const r = await submitForm(TraingData);
-						if (r === "success") {
-							toast({ title: "成功", status: "success" });
-							setTrainingData({ ...TraingData, sets: [] });
-						} else {
-							toast({ title: "失敗", status: "error" });
-						}
-					}}
-				>
-					送信
-				</Button>
-			</div>
+				<FormControl>
+					<FormLabel fontSize={"sm"}>メモ</FormLabel>
+					<Input
+						value={traingData.memo}
+						onChange={(v) => {
+							setTrainingData({
+								...traingData,
+								memo: v.target.value,
+							});
+						}}
+					></Input>
+				</FormControl>
+				<HStack justifyContent={"end"}>
+					<Button
+						onClick={async () => {
+							const r = await submitForm(traingData);
+							if (r === "success") {
+								toast({ title: "成功", status: "success" });
+								setTrainingData({
+									...traingData,
+									sets: [],
+									memo: "",
+								});
+							} else {
+								toast({
+									title: "失敗",
+									status: "error",
+									description: r,
+								});
+							}
+						}}
+					>
+						送信
+					</Button>
+				</HStack>
+			</Stack>
 		</Center>
 	);
 }
@@ -203,10 +245,7 @@ const TrainingSet = ({
 	return (
 		<Tr
 			sx={{
-				"> td": {
-					px: 1,
-					py: 2,
-				},
+				"> td": { px: 1, py: 2 },
 			}}
 		>
 			<Td p={1}>
@@ -231,7 +270,6 @@ const TrainingSet = ({
 							rep: Number(v),
 						});
 					}}
-					// min={0}
 				>
 					<NumberInputField step={1} />
 					<NumberInputStepper>
@@ -239,6 +277,17 @@ const TrainingSet = ({
 						<NumberDecrementStepper />
 					</NumberInputStepper>
 				</NumberInput>
+			</Td>
+			<Td>
+				<Input
+					value={data.memo}
+					onChange={(v) => {
+						seTdata({
+							...data,
+							memo: v.target.value,
+						});
+					}}
+				></Input>
 			</Td>
 			<Td>
 				<IconButton

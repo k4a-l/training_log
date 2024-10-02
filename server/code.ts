@@ -1,9 +1,12 @@
 import { TrainingDataByEvent } from "../type";
+import "../src/google.script";
 
 export function doGet() {
-	return HtmlService.createHtmlOutputFromFile("hosting/index.html")
-		.addMetaTag("viewport", "width=device-width, initial-scale=1")
-		.setTitle("筋トレ記録");
+	return (
+		HtmlService.createHtmlOutputFromFile("hosting/index.html")
+			// .addMetaTag("viewport", "width=device-width, initial-scale=1")
+			.setTitle("筋トレ記録")
+	);
 }
 
 export function addData(form: TrainingDataByEvent) {
@@ -12,17 +15,28 @@ export function addData(form: TrainingDataByEvent) {
 			"15I8IJIEOThHoLQvjDjSHi7-bNYgOtJHXvZwc017pcoI"
 		);
 		const sheet = activeSpreadSheet.getSheetByName("筋力");
-		const data = form.date;
-		sheet.appendRow([data]);
+
+		if (form.sets.length === 0) {
+			return "セット数が0です";
+		}
+		const values = form.sets.map((set) => [
+			form.date,
+			form.event,
+			set.weight,
+			set.rep,
+			form.memo ? form.memo + (set.memo ? " / " + set.memo : "") : "",
+		]);
+		sheet.insertRowsBefore(2, values.length);
+		sheet.getRange(2, 1, values.length, values[0].length).setValues(values);
 
 		return "success"; // 成功した場合は 'success' を返す
 	} catch (e) {
-		return "error"; // 失敗した場合は 'error' を返す
+		return String(e); // 失敗した場合は 'error' を返す
 	}
 }
 
 // スプレッドシートからマスタデータを取得する関数
-export function getMasterData() {
+export function getMasterData(): string[] {
 	const ss = SpreadsheetApp.openById(
 		"15I8IJIEOThHoLQvjDjSHi7-bNYgOtJHXvZwc017pcoI"
 	);
@@ -31,8 +45,8 @@ export function getMasterData() {
 	const lastRow = sheet.getLastRow();
 
 	// 筋トレ種目シートからデータを取得
-	const choices = [];
-	const data = sheet.getRange(2, 1, lastRow - 1, 1).getValues(); // A列の種目名を取得
+	const choices: string[] = [];
+	const data: string[][] = sheet.getRange(2, 1, lastRow - 1, 1).getValues(); // A列の種目名を取得
 
 	// 選択肢のリストを作成
 	for (let i = 0; i < data.length; i++) {

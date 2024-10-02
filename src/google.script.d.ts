@@ -1,7 +1,4 @@
-
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// google.script.d.ts
 declare namespace google {
 	namespace script {
 		interface Run {
@@ -9,10 +6,31 @@ declare namespace google {
 			withFailureHandler(callback: (error: any) => void): this;
 			doSomething(): void; // Apps Scriptで定義した関数
 			// 他のサーバーサイドの関数もここで定義できます
-			addData(data: TrainingDataByEvent): void;
+			addData(data: import("../type").TrainingDataByEvent): void;
 			getMasterData(): string[];
 		}
 
 		const run: Run;
 	}
 }
+
+declare namespace GoogleAppsScript {
+	interface HtmlOutput {
+		getContent(): string;
+		setContent(content: string): HtmlOutput;
+		setTitle(title: string): HtmlOutput;
+		setSandboxMode(mode: string): HtmlOutput;
+	}
+
+	interface HtmlService {
+		createHtmlOutputFromFile(filename: string): HtmlOutput;
+	}
+
+	interface SpreadsheetApp {
+		openById(id: string): any;
+	}
+}
+
+declare const HtmlService: GoogleAppsScript.HtmlService;
+
+declare const SpreadsheetApp: GoogleAppsScript.SpreadsheetApp;
