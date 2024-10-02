@@ -7,4 +7,13 @@ export default defineConfig({
 	build: {
 		outDir: "server/hosting",
 	},
+	server: {
+		proxy: {
+			"/api": {
+				target: "https://script.google.com/macros/s/1lLA8mmeONqpmw9h-ndG5BbEvVgjhAZ7ZsGShsWcWjsoJslG41_LDtfRc/exec", // スクリプトのURL
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api/, ""),
+			},
+		},
+	},
 });
