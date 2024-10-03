@@ -10,28 +10,43 @@ export function doGet() {
 }
 
 export function addData(form: TrainingDataByEvent) {
+	let phase: "initial" | "insert" | "set" = "initial";
+
+	const values = form.sets.map((set) => [
+		form.date,
+		form.event,
+		set.weight,
+		set.rep,
+		form.memo ? form.memo + (set.memo ? " / " + set.memo : "") : "",
+	]);
+
 	try {
 		const activeSpreadSheet = SpreadsheetApp.openById(
 			"15I8IJIEOThHoLQvjDjSHi7-bNYgOtJHXvZwc017pcoI"
 		);
 		const sheet = activeSpreadSheet.getSheetByName("筋力");
 
-		if (form.sets.length === 0) {
+		if (values.length === 0) {
 			return "セット数が0です";
 		}
-		const values = form.sets.map((set) => [
-			form.date,
-			form.event,
-			set.weight,
-			set.rep,
-			form.memo ? form.memo + (set.memo ? " / " + set.memo : "") : "",
-		]);
-		sheet.insertRowsBefore(2, values.length);
-		sheet.getRange(2, 1, values.length, values[0].length).setValues(values);
 
-		return "success"; // 成功した場合は 'success' を返す
+		sheet.insertRowsBefore(2, values.length);
+		phase = "insert";
+
+		sheet.getRange(2, 1, values.length, values[0].length).setValues(values);
+		phase = "set";
+
+		return "success";
 	} catch (e) {
-		return String(e); // 失敗した場合は 'error' を返す
+		if (phase === "insert") {
+			const activeSpreadSheet = SpreadsheetApp.openById(
+				"15I8IJIEOThHoLQvjDjSHi7-bNYgOtJHXvZwc017pcoI"
+			);
+			const sheet = activeSpreadSheet.getSheetByName("筋力");
+			sheet.deleteRows(2, values.length);
+		}
+
+		return String(e);
 	}
 }
 

@@ -1,82 +1,75 @@
 import {
-	Tr,
-	Td,
 	Input,
-	NumberInput,
+	InputProps,
 	NumberInputField,
-	NumberInputStepper,
-	NumberIncrementStepper,
-	NumberDecrementStepper,
-	IconButton,
+	NumberInputFieldProps,
 } from "@chakra-ui/react";
-import { Dispatch } from "react";
+import { Dispatch, forwardRef, useEffect, useState } from "react";
 
-import { TraingSetType } from "../../type";
+export const NumberInputFixed = forwardRef(
+	(
+		props: Omit<InputProps, "onChange" | "value"> & {
+			onChange: Dispatch<number>;
+			value: number;
+		},
+		ref
+	) => {
+		const { value, onChange } = props;
+		const [valueString, setValueString] = useState(String(value));
 
-export const TrainingSet = ({
-	data,
-	seTdata,
-	onClickDelete,
-}: {
-	data: TraingSetType;
-	seTdata: Dispatch<TraingSetType>;
-	onClickDelete: () => void;
-}) => {
-	return (
-		<Tr
-			sx={{
-				"> td": { px: 1, py: 2 },
-			}}
-		>
-			<Td p={1}>
-				<Input
-					w="auto"
-					type="number"
-					value={data.weight}
-					onChange={(v) => {
-						seTdata({
-							...data,
-							weight: Number(v.target.value),
-						});
-					}}
-				/>
-			</Td>
-			<Td>
-				<NumberInput
-					value={data.rep}
-					onChange={(v) => {
-						seTdata({
-							...data,
-							rep: Number(v),
-						});
-					}}
-				>
-					<NumberInputField step={1} />
-					<NumberInputStepper>
-						<NumberIncrementStepper />
-						<NumberDecrementStepper />
-					</NumberInputStepper>
-				</NumberInput>
-			</Td>
-			<Td>
-				<Input
-					value={data.memo}
-					onChange={(v) => {
-						seTdata({
-							...data,
-							memo: v.target.value,
-						});
-					}}
-				></Input>
-			</Td>
-			<Td>
-				<IconButton
-					size="sm"
-					onClick={onClickDelete}
-					icon={<p>-</p>}
-					aria-label={""}
-				/>
-			</Td>
-		</Tr>
-	);
-};
+		useEffect(() => {
+			if (valueString !== String(value)) {
+				setValueString(String(value));
+			}
+			// eslint-disable-next-line react-hooks/exhaustive-deps
+		}, [value]);
+
+		return (
+			<Input
+				{...props}
+				ref={ref}
+				value={valueString}
+				onChange={({ target: { value } }) => {
+					setValueString(value);
+					if (!isNaN(Number(value))) {
+						onChange(Number(value));
+					}
+				}}
+			/>
+		);
+	}
+);
+
+export const NumberInputFieldFixed = forwardRef(
+	(
+		props: Omit<NumberInputFieldProps, "onChange" | "value"> & {
+			onChange: Dispatch<number>;
+			value: number;
+		},
+		ref
+	) => {
+		const { value, onChange } = props;
+		const [valueString, setValueString] = useState(String(value));
+
+		useEffect(() => {
+			if (valueString !== String(value)) {
+				setValueString(String(value));
+			}
+			// eslint-disable-next-line react-hooks/exhaustive-deps
+		}, [value]);
+
+		return (
+			<NumberInputField
+				{...props}
+				ref={ref}
+				value={valueString}
+				onChange={({ target: { value } }) => {
+					setValueString(value);
+					if (!isNaN(Number(value))) {
+						onChange(Number(value));
+					}
+				}}
+			/>
+		);
+	}
+);
